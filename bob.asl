@@ -19,12 +19,7 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 
 +customer(r1) : not .desire(carry_to(r2))
    <- !carry_to(r2).
-+customer(r3) : not .desire(carry_to(r2))
-   <- !carry_to(r2).
-+customer(r4) : not .desire(carry_to(r2))
-   <- !carry_to(r2).
-+customer(r5) : not .desire(carry_to(r2))
-   <- !carry_to(r2).
+
 
 +!carry_to(R)
    <- .drop_desire(go_to(cust)); // stop checking 
