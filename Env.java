@@ -5,6 +5,8 @@ import jason.environment.grid.GridWorldModel;
 import jason.environment.grid.GridWorldView;
 import jason.environment.grid.Location;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.awt.Color;
 import java.awt.Font;
@@ -25,15 +27,22 @@ public class Env extends Environment {
     public static final Literal g3 = Literal.parseLiteral("customer(r3)");
     public static final Literal g4 = Literal.parseLiteral("customer(r4)");
     public static final Literal g5 = Literal.parseLiteral("customer(r5)");
+    public List<List<Location>> locList;
     static Logger logger = Logger.getLogger(Env.class.getName());
     private Model model;
     private View  view;
-
+    private int counter;
     
 
     @Override
     public void init(String[] args) {
+        locList=new ArrayList<>(Arrays.asList(Arrays.asList(new Location(3,0),new Location(0,0)),
+        Arrays.asList(new Location(0,3),new Location(3,0)),
+        Arrays.asList(new Location(2,2),new Location(0,4)),
+        Arrays.asList(new Location(3,3),new Location(4,3))
+        ));
         model = new Model();
+        counter=1;
         view  = new View(model);
         model.setView(view);
         updatePercepts();
@@ -44,8 +53,8 @@ public class Env extends Environment {
         logger.info(ag+" doing: "+ action);
         int i=0;
         try {
-            if (action.equals(ns)) {
-                model.move(); 
+            if (action.getFunctor().equals("move")) {
+                model.move(locList); 
             }else if (action.getFunctor().equals("move_towards")) {
                 int x = (int)((NumberTerm)action.getTerm(0)).solve();
                 int y = (int)((NumberTerm)action.getTerm(1)).solve();
@@ -75,38 +84,26 @@ public class Env extends Environment {
     /** creates the agents perception based on the Model */
     void updatePercepts() {
         clearPercepts();
-
         Location r1Loc = model.getAgPos(0);
-        Location r2Loc = model.getAgPos(1);
-        Location r3Loc = model.getAgPos(2);
-        Location r4Loc = model.getAgPos(3);
-        Location r5Loc = model.getAgPos(4);
-
-
+        Location r2Loc = locList.get(0).get(1);
         Literal pos1 = Literal.parseLiteral("pos(r1," + r1Loc.x + "," + r1Loc.y + ")");
         Literal pos2 = Literal.parseLiteral("pos(r2," + r2Loc.x + "," + r2Loc.y + ")");
-        Literal pos3 = Literal.parseLiteral("pos(r3," + r3Loc.x + "," + r3Loc.y + ")");
-        Literal pos4 = Literal.parseLiteral("pos(r4," + r4Loc.x + "," + r4Loc.y + ")");
-        Literal pos5 = Literal.parseLiteral("pos(r5," + r5Loc.x + "," + r5Loc.y + ")");
         addPercept(pos1);
         addPercept(pos2);
-        addPercept(pos3);
-        addPercept(pos4);
-        addPercept(pos5);
 
         if (model.hasObject(CUST, r1Loc)) {
             addPercept(g1);
         }
-        if (model.hasObject(CUST, r2Loc)) {
+        if (model.hasObject(CUST, model.getAgPos(1))) {
             addPercept(g2);
         }
-        if (model.hasObject(CUST, r3Loc)) {
+        if (model.hasObject(CUST, model.getAgPos(2))) {
             addPercept(g3);
         }
-        if (model.hasObject(CUST, r4Loc)) {
+         if (model.hasObject(CUST, model.getAgPos(3))) {
             addPercept(g4);
         }
-        if (model.hasObject(CUST, r5Loc)) {
+         if (model.hasObject(CUST, model.getAgPos(4))) {
             addPercept(g5);
         }
     }
@@ -116,9 +113,7 @@ public class Env extends Environment {
         public static final int MErr = 2; 
         int nerr; 
         boolean r1HasCust = false; 
-
         Random random = new Random(System.currentTimeMillis());
-
         private Model() {
             super(GSize, GSize, 5);
 
@@ -145,51 +140,48 @@ public class Env extends Environment {
             add(CUST, 3,3);
             add(CUST, 2,2);
         }
-        void move() throws Exception {
+        void move(List<List<Location>>locList) throws Exception {
             Location r1 = getAgPos(0);
-        
-            // Get the distances to all customer objects using Manhattan distance
-            int[] distances = new int[]{
-                    calculateManhattanDistance(r1, getCustomerLocation(1)),
-                    calculateManhattanDistance(r1, getCustomerLocation(2)),
-                    calculateManhattanDistance(r1, getCustomerLocation(3)),
-                    calculateManhattanDistance(r1, getCustomerLocation(4)),
-
-            };
-        
-            // Find the index of the customer with the minimum distance
-            int minDistanceIndex = findMinDistanceIndex(distances);
-        
+            List<Integer> distancesList=new ArrayList<>();
+            for(int i=0;i<locList.size();i++){
+            distancesList.add(calculateManhattanDistance(r1,locList.get(i).get(0))+calculateManhattanDistance(r1,locList.get(i).get(1)));
+            }
+            List<Integer> indexesList=new ArrayList<>(distancesList);
+            Collections.sort(distancesList);
+            Location a=locList.get(0).get(0);
+            Location b=locList.get(0).get(1);
+            if(counter==1){
+            for(int i=0;i<indexesList.size();i++){
+                a=locList.get(i).get(0);
+                b=locList.get(i).get(1);
+               for(int j=0;j<distancesList.size();j++){
+                if(distancesList.get(j).equals(indexesList.get(i))){
+                    locList.get(i).set(0,locList.get(j).get(0));
+                    locList.get(j).set(0,a);
+                    locList.get(i).set(1,locList.get(j).get(1));
+                    locList.get(j).set(1 ,b);
+                }
+               }   
+            }
+            counter++;
+             }
+            System.out.println(locList);
             // Move towards the customer with the minimum distance
-            Location target = getCustomerLocation(minDistanceIndex + 1);
+            Location target = locList.get(0).get(0);
             moveToTarget(r1, target);
-            distances[minDistanceIndex]=100;
             // Update agent positions
-
             setAgPos(0, r1);
             setAgPos(1, getAgPos(1));
             setAgPos(2, getAgPos(2));
             setAgPos(3, getAgPos(3));
             setAgPos(4, getAgPos(4));
+            
         }
         
         // Helper method to calculate Manhattan distance between two locations
         int calculateManhattanDistance(Location loc1, Location loc2) {
             return Math.abs(loc1.x - loc2.x) + Math.abs(loc1.y - loc2.y);
         }
-        
-        // Helper method to find the index of the minimum value in an array
-        int findMinDistanceIndex(int[] distances) {
-            int minIndex = 0;
-            for (int i = 1; i < distances.length; i++) {
-                if (distances[i] < distances[minIndex]) {
-                    minIndex = i;
-                }
-            }
-            return minIndex;
-        }
-        
-        // Helper method to move towards a target location
         void moveToTarget(Location current, Location target) {
             if (current.x < target.x) {
                 current.x++;
@@ -202,22 +194,6 @@ public class Env extends Environment {
                 current.y--;
             }
         }
-        Location getCustomerLocation(int customerIndex) {
-            // Choose the location of the customer based on the index
-            switch (customerIndex) {
-                case 1:
-                    return new Location(3, 0);
-                case 2:
-                    return new Location(0, 3); // Example location for customer 2
-                case 3:
-                    return new Location(3, 3); // Example location for customer 3
-                case 4:
-                    return new Location(2, 2); // Example location for customer 4
-                default:
-                    return new Location(0,0); // Default location (you can modify it accordingly)
-            }
-        }
-        
         
         
         void moveTowards(int x, int y) throws Exception {
@@ -252,11 +228,14 @@ public class Env extends Environment {
                     nerr++;
                 }
             }
+
         }
         void dropCust() {
             if (r1HasCust) {
                 r1HasCust = false;
                 add(CUST, getAgPos(0));
+                counter=1;
+                locList.remove(0);
             }
         }
         void burnCust() {
