@@ -1,1 +1,2 @@
-# AgentSpeakJason
+# AgentSpeakJason 
+App that creates an enviroment where there are 4 customers as objects to the enviroment in fixed locations.Moreover,there 4 objects that represent the destinations also in fixed locations of the taxi and the object of the taxi that is located randomly every run of the program.Firstly it is calculating the distance between the taxi,the customer and the destination.The calculation of the distances are a result of manhattan distance.After calulations the taxi goes to  the customer and picks him up and moves him to the destination.Afterwards the taxi drops the customer off and is deleted from the enviroment and it repeats the same process untill there no more customers
